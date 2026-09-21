@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat App</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        #chat-box { 
+            border: 2px solid #333; 
+            height: 350px; 
+            overflow-y: scroll; 
+            padding: 10px; 
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .msg { 
+            margin: 8px 0; 
+            padding: 8px; 
+            background: #dcf8c6; 
+            border-radius: 5px; 
+            display: inline-block;
+            clear: both;
+            float: left;
+        }
+        .msg-container { width: 100%; overflow: hidden; }
+        input { width: 75%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 20%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Live Chat</h2>
+    <div id="chat-box"></div>
+    
+    <div>
+        <input type="text" id="message-input" placeholder="Message type karein...">
+        <button id="send-btn">Send</button>
+    </div>
+
+    <!-- Firebase version 10 CDN (Type Module use karna zaroori hai) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Yahan apne Firebase Project ki config detail daalein
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Firebase initialize karna
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const messagesRef = ref(db, 'chats'); // Database ke andar 'chats' folder banega
+
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // 1. Message Database mein Bhejna (Send)
+        sendBtn.addEventListener('click', () => {
+            const text = messageInput.value;
+            if(text.trim() !== "") {
+                push(messagesRef, {
+                    message: text,
+                    timestamp: Date.now()
+                });
+                messageInput.value = ""; // Input box khali karna
+            }
+        });
+
+        // 2. Data Live Sync (Seenk) Karna
+        // Jaise hi database mein naya message aayega, ye function automatically chalega
+        onChildAdded(messagesRef, (snapshot) => {
+            const data = snapshot.val();
+            
+            // Naya message UI mein dikhane ke liye HTML elements banana
+            const container = document.createElement('div');
+            container.className = 'msg-container';
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'msg';
+            msgDiv.innerText = data.message;
+            
+            container.appendChild(msgDiv);
+            chatBox.appendChild(container);
+            
+            // Naye message aane par scroll bar ko automatic niche karna
+            chatBox.scrollTop = chatBox.scrollHeight; 
+        });
+    </script>
+</body>
+</html>
